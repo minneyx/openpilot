@@ -44,7 +44,7 @@ if __name__ == "__main__":
     speed_group_stats[group] = defaultdict(lambda: {'err': 0, "cnt": 0, "saturated": 0, "=": 0, "+": 0, "-": 0})
 
   carControl = messaging.sub_sock('carControl', addr=args.addr, conflate=True)
-  sm = messaging.SubMaster(['carState', 'carControl', 'controlsState'], addr=args.addr)
+  sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'lateralPlan'], addr=args.addr)
 
   msg_cnt = 0
   cnt = 0
@@ -54,9 +54,6 @@ if __name__ == "__main__":
     sm.update()
     msg_cnt += 1
 
-    actual_speed = sm['carState'].vEgo
-    active = sm['controlsState'].active
-    steer_override = sm['carState'].steeringPressed
     if args.control_type == "pid":
       control_state = sm['controlsState'].lateralControlState.pidState
     elif args.control_type == "indi":
@@ -68,11 +65,16 @@ if __name__ == "__main__":
     else:
       raise ValueError("invalid lateral control type, see help")
 
-    # must be engaged, not at standstill, and not overriding steering
-    if sm['controlsState'].active and not sm['carState'].standstill and not sm['carState'].steeringPressed:
+    v_ego = sm['carState'].vEgo
+    active = sm['controlsState'].active
+    standstill = sm['carState'].standstill
+    overriding = sm['carState'].steeringPressed
+    changing_lanes = sm['lateralPlan'].laneChangeState != 0
+    # must be engaged, not at standstill, not overriding steering, and not changing lanes
+    if active and not standstill and not overriding and not changing_lanes:
       cnt += 1
 
-      # wait 5 seconds after engage/override/standstill
+      # wait 5 seconds after engage / standstill / override / lane change
       if cnt >= 500:
         actual_angle = control_state.steeringAngleDeg
         desired_angle = control_state.steeringAngleDesiredDeg
@@ -85,7 +87,7 @@ if __name__ == "__main__":
         angle_abs = int(abs(round(desired_angle, 0)))
 
         for group, group_props in all_groups.items():
-          if actual_speed > group_props[0]:
+          if v_ego > group_props[0]:
             # collect stats
             speed_group_stats[group][angle_abs]["err"] += angle_error
             speed_group_stats[group][angle_abs]["cnt"] += 1
@@ -108,7 +110,7 @@ if __name__ == "__main__":
       if cnt != 0:
         print("COLLECTING ...\n")
       else:
-        print("DISABLED (standstill, not active, or steer override)\n")
+        print("DISABLED (not active, standstill, steering override, or lane change)\n")
       for group in display_groups:
         if len(speed_group_stats[group]) > 0:
           print(f"speed group: {group:18s} {all_groups[group][1]}")
