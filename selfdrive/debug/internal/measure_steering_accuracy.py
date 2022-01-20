@@ -2,6 +2,7 @@
 # type: ignore
 
 import os
+import time
 import argparse
 import signal
 from collections import defaultdict
@@ -45,6 +46,7 @@ if __name__ == "__main__":
 
   carControl = messaging.sub_sock('carControl', addr=args.addr, conflate=True)
   sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'lateralPlan'], addr=args.addr)
+  time.sleep(1)  # Make sure all submaster data is available before going further
 
   msg_cnt = 0
   cnt = 0
