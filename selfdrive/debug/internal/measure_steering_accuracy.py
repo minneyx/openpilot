@@ -25,12 +25,12 @@ if __name__ == "__main__":
     os.environ["ZMQ"] = "1"
     messaging.context = messaging.Context()
 
-  all_groups = {"germany":  (45, "45 - up m/s  |  101 -  up mph  |  162 -  up km/h"),
-                "veryfast": (35, "35 - 45 m/s  |   78 - 101 mph  |  126 - 162 km/h"),
-                "fast":     (25, "25 - 35 m/s  |   56 -  78 mph  |   90 - 126 km/h"),
-                "medium":   (15, "15 - 25 m/s  |   34 -  56 mph  |   54 -  90 km/h"),
-                "slow":     (5,  " 5 - 15 m/s  |   11 -  34 mph  |   18 -  54 km/h"),
-                "crawl":    (0,  " 0 -  5 m/s  |    0 -  11 mph  |    0 -  18 km/h")}
+  all_groups = {"germany":  (45, "45 - up m/s  //  162 - up km/h  //  101 - up mph"),
+                "veryfast": (35, "35 - 45 m/s  //  126 - 162 km/h  //  78 - 101 mph"),
+                "fast":     (25, "25 - 35 m/s  //  90 - 126 km/h  //  56 - 78 mph"),
+                "medium":   (15, "15 - 25 m/s  //  54 - 90 km/h  //  34 - 56 mph"),
+                "slow":     (5,  " 5 - 15 m/s  //  18 - 54 km/h  //  11 - 34 mph"),
+                "crawl":    (0,  " 0 - 5 m/s  //  0 - 18 km/h  //  0 - 11 mph")}
 
   if args.group == "all":
     display_groups = all_groups.keys()
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         print("DISABLED (not active, standstill, steering override, or lane change)\n")
       for group in display_groups:
         if len(speed_group_stats[group]) > 0:
-          print(f"speed group: {group:18s} {all_groups[group][1]}")
+          print(f"speed group: {group:10s} {all_groups[group][1]:>56s}")
           print(f"  {'-'*78}")
           for k in sorted(speed_group_stats[group].keys()):
             v = speed_group_stats[group][k]
