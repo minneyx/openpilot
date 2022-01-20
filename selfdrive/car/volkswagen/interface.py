@@ -52,9 +52,9 @@ class CarInterface(CarInterfaceBase):
     tire_stiffness_factor = 1.0  # Let the params learner figure this out
     ret.lateralTuning.pid.kpBP = [0.]
     ret.lateralTuning.pid.kiBP = [0.]
-    ret.lateralTuning.pid.kf = 0.00006
-    ret.lateralTuning.pid.kpV = [0.6]
-    ret.lateralTuning.pid.kiV = [0.2]
+    ret.lateralTuning.pid.kf = 0.00014  # max FF 8 degrees @ 30m/s (65mph): 30**2 * 8 * 0.00014 == 1.008
+    ret.lateralTuning.pid.kpV = [0.2]
+    ret.lateralTuning.pid.kiV = [0.0]
 
     # Per-chassis tuning values, override tuning defaults here if desired
 
