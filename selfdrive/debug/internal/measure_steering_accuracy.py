@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
   speed_group_stats = {}
   for group in all_groups:
-    speed_group_stats[group] = defaultdict(lambda: {'err': 0, "cnt": 0, "saturated": 0, "=": 0, "+": 0, "-": 0})
+    speed_group_stats[group] = defaultdict(lambda: {'err': 0, "cnt": 0, "=": 0, "+": 0, "-": 0, "steer": 0, "saturated": 0, "dpp": 0})
 
   carControl = messaging.sub_sock('carControl', addr=args.addr, conflate=True)
   sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'lateralPlan'], addr=args.addr)
@@ -69,9 +69,11 @@ if __name__ == "__main__":
 
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
+    steer = sm['carControl'].actuators.steer
     standstill = sm['carState'].standstill
     overriding = sm['carState'].steeringPressed
     changing_lanes = sm['lateralPlan'].laneChangeState != 0
+    d_path_points = sm['lateralPlan'].dPathPoints
     # must be engaged, not at standstill, not overriding steering, and not changing lanes
     if active and not standstill and not overriding and not changing_lanes:
       cnt += 1
@@ -91,8 +93,11 @@ if __name__ == "__main__":
         for group, group_props in all_groups.items():
           if v_ego > group_props[0]:
             # collect stats
-            speed_group_stats[group][angle_abs]["err"] += angle_error
             speed_group_stats[group][angle_abs]["cnt"] += 1
+            speed_group_stats[group][angle_abs]["err"] += angle_error
+            speed_group_stats[group][angle_abs]["steer"] += abs(steer)
+            if len(d_path_points):
+              speed_group_stats[group][angle_abs]["dpp"] += abs(d_path_points[0])
             if control_state.saturated:
               speed_group_stats[group][angle_abs]["saturated"] += 1
             if actual_angle == desired_angle:
@@ -115,9 +120,9 @@ if __name__ == "__main__":
         print("DISABLED (not active, standstill, steering override, or lane change)\n")
       for group in display_groups:
         if len(speed_group_stats[group]) > 0:
-          print(f"speed group: {group:10s} {all_groups[group][1]:>56s}")
-          print(f"  {'-'*78}")
+          print(f"speed group: {group:10s} {all_groups[group][1]:>91s}")
+          print(f"  {'-'*113}")
           for k in sorted(speed_group_stats[group].keys()):
             v = speed_group_stats[group][k]
-            print(f'  angle: {k:#2} | error: {round(v["err"] / v["cnt"], 2):2.2f} | =:{int(v["="] / v["cnt"] * 100):#3}% | +:{int(v["+"] / v["cnt"] * 100):#4}% | -:{int(v["-"] / v["cnt"] * 100):#3}% | sat: {v["saturated"]:#4} | count: {v["cnt"]:#5}')
+            print(f'  {k:#2}° | actuator:{int(v["steer"] / v["cnt"] * 100):#3}% | error: {round(v["err"] / v["cnt"], 2):2.2f}° | =:{int(v["="] / v["cnt"] * 100):#3}% | +:{int(v["+"] / v["cnt"] * 100):#4}% | -:{int(v["-"] / v["cnt"] * 100):#3}% | sat cnt: {v["saturated"]:#4} | dpathpoints: {round(v["dpp"] / v["cnt"], 2):2.2f} | total: {v["cnt"]:#5}')
           print("")
