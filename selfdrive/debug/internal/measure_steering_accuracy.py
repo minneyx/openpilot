@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
   speed_group_stats = {}
   for group in all_groups:
-    speed_group_stats[group] = defaultdict(lambda: {'err': 0, "cnt": 0, "=": 0, "+": 0, "-": 0, "steer": 0, "saturated": 0, "dpp": 0})
+    speed_group_stats[group] = defaultdict(lambda: {'err': 0, "cnt": 0, "=": 0, "+": 0, "-": 0, "steer": 0, "limited": 0, "saturated": 0, "dpp": 0})
 
   carControl = messaging.sub_sock('carControl', addr=args.addr, conflate=True)
   sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'lateralPlan'], addr=args.addr)
@@ -69,8 +69,9 @@ if __name__ == "__main__":
 
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
-    steer = sm['carControl'].actuators.steer
+    steer = sm['carControl'].actuatorsOutput.steer
     standstill = sm['carState'].standstill
+    steer_limited = sm['carState'].steeringRateLimited
     overriding = sm['carState'].steeringPressed
     changing_lanes = sm['lateralPlan'].laneChangeState != 0
     d_path_points = sm['lateralPlan'].dPathPoints
@@ -98,6 +99,8 @@ if __name__ == "__main__":
             speed_group_stats[group][angle_abs]["steer"] += abs(steer)
             if len(d_path_points):
               speed_group_stats[group][angle_abs]["dpp"] += abs(d_path_points[0])
+            if steer_limited:
+              speed_group_stats[group][angle_abs]["limited"] += 1
             if control_state.saturated:
               speed_group_stats[group][angle_abs]["saturated"] += 1
             if actual_angle == desired_angle:
@@ -124,5 +127,5 @@ if __name__ == "__main__":
           print(f"  {'-'*113}")
           for k in sorted(speed_group_stats[group].keys()):
             v = speed_group_stats[group][k]
-            print(f'  {k:#2}° | actuator:{int(v["steer"] / v["cnt"] * 100):#3}% | error: {round(v["err"] / v["cnt"], 2):2.2f}° | -:{int(v["-"] / v["cnt"] * 100):#3}% | =:{int(v["="] / v["cnt"] * 100):#3}% | +:{int(v["+"] / v["cnt"] * 100):#3}% | sat cnt: {v["saturated"]:#4} | dpathpoints: {round(v["dpp"] / v["cnt"], 2):2.2f} | total: {v["cnt"]:#5}')
+            print(f'  {k:#2}° | actuator:{int(v["steer"] / v["cnt"] * 100):#3}% | error: {round(v["err"] / v["cnt"], 2):2.2f}° | -:{int(v["-"] / v["cnt"] * 100):#3}% | =:{int(v["="] / v["cnt"] * 100):#3}% | +:{int(v["+"] / v["cnt"] * 100):#3}% | lim:{v["limited"]:#5} | sat:{v["saturated"]:#5} | path dev: {round(v["dpp"] / v["cnt"], 2):2.2f}m | total: {v["cnt"]:#5}')
           print("")
