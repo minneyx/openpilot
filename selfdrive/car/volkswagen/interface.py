@@ -63,7 +63,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kiBP = [0.]
     ret.lateralTuning.pid.kf = 0.00006
     ret.lateralTuning.pid.kpV = [0.6]
-    ret.lateralTuning.pid.kiV = [0.2]
+    ret.lateralTuning.pid.kiV = [0.3]
 
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
